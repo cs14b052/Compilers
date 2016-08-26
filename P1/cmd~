@@ -1,0 +1,4 @@
+bison -d p1.y
+flex p1.l
+gcc p1.tab.c lex.yy.c -lfl -o p1
+./p1 < /home/smeghanaaparna/Meghana/5th Sem/CS3310/macroJavaTestCases/Public Testcases
