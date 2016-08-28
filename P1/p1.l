@@ -12,7 +12,6 @@ DIGIT [0-9]
 LETTER [a-zA-Z]
 UNDERSCORE "_"
 ID ({LETTER}|UNDERSCORE)({LETTER}|{DIGIT})*
-BOOL "true"
 %%
 "class"			return CLASS;
 "public"		return PUBLIC;
@@ -23,7 +22,7 @@ BOOL "true"
 "]"				return RBRAC;
 "String"		return STRING;
 "System.out.println" return PRINT;
-"extends"		return EXTENDS
+"extends"		return EXTENDS;
 ","				return COMMA;
 "return"		return RETURN;
 "this"			return THIS;
@@ -32,12 +31,8 @@ BOOL "true"
 "#define"		return HASHDEF;
 "int"			return INT;
 "boolean"		return BOOLEAN;
-{BOOL}			{
-					char* temp = (char*) malloc(sizeof(char)*100);
-					strcpy(temp,yytext);
-					yylval.token_val = temp;
-					return BOOLVAL;
-				}
+"true"			return TRUE;
+"false"			return FALSE;
 "if"			return IF;
 "else"			return ELSE;
 "while"			return WHILE;
@@ -59,7 +54,9 @@ BOOL "true"
 ";"				return SEMICOLON; 
 {DIGIT}+		{ 
 					//printf("Saw an integer %s\n",yytext); 
-					yylval.int_val = atoi(yytext);
+					char* temp = (char*) malloc(sizeof(char)*100);
+					strcpy(temp,yytext);
+					yylval.token_val = temp;
 					return INTEGER; 
 				}
 {ID}			{
@@ -68,8 +65,10 @@ BOOL "true"
 					yylval.token_val = temp;
 					return ID;
 				}
+"//".*			;
+[/][*][^*]*[*]+([^*/][^*]*[*]+)*[/] ;
 [ \t\n]+		;		//do nothing on whitespace
-<<EOF>>			return EOF;
+<<EOF>>			{return 0;}
 .               { printf("error\n"); return 1;}
 
 %%
