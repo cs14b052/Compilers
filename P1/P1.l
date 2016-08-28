@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "p1.tab.h" // the output of bison on adder.y
+#include "P1.tab.h" // the output of bison on adder.y
 void yyerror(char*); 
 int yyparse(void);
 %}

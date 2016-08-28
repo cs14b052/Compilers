@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 extern int yylex();
 extern void yyerror(char *);
 void print(int);
@@ -22,9 +23,14 @@ typedef struct Macros
 	struct Macros *nextMacro;
 }Macros;
 
+MacroArguments* createArgumentNodes(char*);
+char* parseValue(MacroArguments*, MacroArguments*,char*);
+char* macroEvaluation(char*, char*);
+char* substituteValue(MacroArguments* ,MacroArguments* ,char* );
 Macros* MacroHead = NULL;
 Macros* MacroTop = NULL;
 int numberOfMacros = 0;
+bool macroFound = false;
 #define N 10000
 %}
 
@@ -56,7 +62,6 @@ int numberOfMacros = 0;
 %type <token_val> ExpressionList
 %type <token_val> PrimaryExpression
 %type <token_val> Identifier
-%type <token_val> IdentifierStatement
 %type <token_val> Integer
 %type <token_val> elseStatement
 %type <token_val> Goal
@@ -239,13 +244,6 @@ Statement : LCURL StatementStar RCURL
 		  	stringConcat($$,$3);
 		  	stringConcat($$,");\n");
 		  }
-		  | Identifier IdentifierStatement
-		  {
-		  	$$ = (char*)malloc(sizeof(char)*N);
-		  	strcpy($$,"");
-		  	stringConcat($$,$1);
-		  	stringConcat($$,$2);
-		  }
 		  | IF LPAR Expression RPAR Statement elseStatement
 		  {
 		  	$$ = (char*)malloc(sizeof(char)*N);
@@ -266,33 +264,33 @@ Statement : LCURL StatementStar RCURL
 		  	stringConcat($$,")");
 		  	stringConcat($$,$5);
 		  }
+		  | Identifier LPAR ExpressionList RPAR SEMICOLON
+		  {
+			   	$$ = (char*)malloc(sizeof(char)*N);
+			  	strcpy($$,"");
+			  	stringConcat($$,macroEvaluation($1,$3));
+		  }
+		  | Identifier EQUAL Expression SEMICOLON
+			{
+				$$ = (char*)malloc(sizeof(char)*N);
+			  	strcpy($$,"");
+			  	stringConcat($$,$1);
+			  	stringConcat($$," = ");
+			  	stringConcat($$,$3);
+			  	stringConcat($$,";\n");
+			}
+			| Identifier LBRAC Expression RBRAC EQUAL Expression SEMICOLON
+		   {
+			   	$$ = (char*)malloc(sizeof(char)*N);
+			  	strcpy($$,"");
+			  	stringConcat($$,$1);
+			  	stringConcat($$,"[");
+			  	stringConcat($$,$3);
+			  	stringConcat($$,"] = ");
+			  	stringConcat($$,$6);
+			  	stringConcat($$,";\n");
+		   }
 
-IdentifierStatement: EQUAL Expression SEMICOLON
-					{
-						$$ = (char*)malloc(sizeof(char)*N);
-					  	strcpy($$,"");
-					  	stringConcat($$," = ");
-					  	stringConcat($$,$2);
-					  	stringConcat($$,";\n");
-					}
-				   | LBRAC Expression RBRAC EQUAL Expression SEMICOLON
-				   {
-					   	$$ = (char*)malloc(sizeof(char)*N);
-					  	strcpy($$,"");
-					  	stringConcat($$,"[");
-					  	stringConcat($$,$2);
-					  	stringConcat($$,"] = ");
-					  	stringConcat($$,$5);
-					  	stringConcat($$,";\n");
-				   }
-				   | LPAR ExpressionList RPAR SEMICOLON
-				   {
-					   	$$ = (char*)malloc(sizeof(char)*N);
-					  	strcpy($$,"");
-					  	stringConcat($$,"(");
-					  	stringConcat($$,$2);
-					  	stringConcat($$,");\n");
-					}
 
 elseStatement : ELSE Statement
 				{
@@ -420,18 +418,10 @@ Expression : PrimaryExpression AND PrimaryExpression
 		   }
 		   | Identifier LPAR ExpressionList RPAR
 		   {
-				$$ = (char*)malloc(sizeof(char)*N);
-				strcpy($$,"");
-				int i = 0;
-				for(i = 0;i < numberOfMacros;i++)
-				{
-					if(strcmp(Macros[i],$1)==0)
-					{
-						strcpy($$,MacroExpr[i]);
-						break;
-					}
-				}
-			}
+		   		$$ = (char*)malloc(sizeof(char)*N);
+		   		// printf("%s\n",macroEvaluation($1,$3) );
+		   		strcpy($$,macroEvaluation($1,$3));
+		   }
 
 PrimaryExpression : Integer 
 					{ 
@@ -488,34 +478,41 @@ PrimaryExpression : Integer
 				  	stringConcat($$,")");
 				  }
 
-MacroDefinition : HASHDEF Identifier LPAR IdentifierList RPAR ExprState
+MacroDefinition : Define Identifier LPAR IdentifierList RPAR ExprState
 				{
-					Macros[numberOfMacros] = (char*)malloc(sizeof(char*)*N);
-					MacroExpr[numberOfMacros] = (char*)malloc(sizeof(char*)*N);
-					strcpy(Macros[numberOfMacros],$2);
-					strcpy(MacroExpr[numberOfMacros],$6);
+					MacroTop->MacroIdentifier = (char*)malloc(sizeof(char*)*N);
+					MacroTop->nextMacro = NULL;
+					char* temp = (char*)malloc(sizeof(char)*N);
+					strncpy(temp,$2+1,strlen($2)-2);
+					strcpy(MacroTop->MacroIdentifier,temp);
 					numberOfMacros++;
+					macroFound = false;
 				}
-// Define : HASHDEF
-// 		{
-// 			if (MacroHead == NULL)
-// 			{
-// 				MacroHead = (Macros*) malloc(sizeof(Macros));
-// 				MacroTop = MacroHead;
-// 			}
-// 			else
-// 			{
-// 				Macros* node = (Macros*) malloc(sizeof(Macros));
-// 				MacroHead->nextMacro = node;
-// 				MacroTop = node;
-// 			}
-// 		}
+Define : HASHDEF
+		{
+			macroFound = true;
+			if (MacroHead == NULL)
+			{
+				MacroHead = (Macros*) malloc(sizeof(Macros));
+				MacroTop = (Macros*) malloc(sizeof(Macros));
+				MacroTop = MacroHead;
+			}
+			else
+			{
+				Macros* node = (Macros*) malloc(sizeof(Macros));
+				MacroTop->nextMacro = (Macros*) malloc(sizeof(Macros));
+				MacroTop->nextMacro = node;
+				MacroTop = node;
+			}
+		}
 
 ExprState : LCURL StatementStar RCURL
 			{
 				$$ = (char*)malloc(sizeof(char)*N);
 				strcpy($$,"");
 				stringConcat($$,$2);
+				MacroTop->MacroValue = (char*)malloc(sizeof(char)*N);
+				strcpy(MacroTop->MacroValue,$$);
 			}
 		  | LPAR Expression RPAR
 		  {
@@ -524,17 +521,38 @@ ExprState : LCURL StatementStar RCURL
 			stringConcat($$,"(");
 			stringConcat($$,$2);
 			stringConcat($$,")");
+			MacroTop->MacroValue = (char*)malloc(sizeof(char)*N);
+			strcpy(MacroTop->MacroValue,$$);
 		  }
 
 IdentifierList : Identifier additionalIdentifiers 
+				{
+					$$ = (char*)malloc(sizeof(char)*N);
+					strcpy($$,"");
+					stringConcat($$,$1);
+					stringConcat($$,$2);
+					MacroTop->argumentList = (MacroArguments*)malloc(sizeof(MacroArguments));
+					MacroTop->argumentList = createArgumentNodes($$);
+				}
 			   |  {$$="";}
 
 additionalIdentifiers : additionalIdentifiers COMMA Identifier
+						{
+							$$ = (char*)malloc(sizeof(char)*N);
+							strcpy($$,"");
+							stringConcat($$,$1);
+							stringConcat($$,",");
+							stringConcat($$,$3);
+						}
 					  |   { $$ = "";}
 Identifier : ID {
 					$$ = (char*) malloc(sizeof(char)*N);
 					strcpy($$,"");
+					if (macroFound)
+						stringConcat($$,"?");
 					stringConcat($$,$1);
+					if (macroFound)
+						stringConcat($$,"?");
 				}
 
 Integer : INTEGER 
@@ -553,4 +571,107 @@ void stringConcat(char* a, char* b)
 	strcat(temp,b);
 	strcpy(a,temp);
 	free(temp);
+}
+
+MacroArguments* createArgumentNodes(char* id)
+{
+	int i;
+	bool first = true;
+	MacroArguments* head  = (MacroArguments*) malloc(sizeof(MacroArguments));
+	MacroArguments* argTop  = (MacroArguments*) malloc(sizeof(MacroArguments));
+	int prevIndex = 0;
+	for (i = 0; i < strlen(id); ++i)
+	{
+		if (id[i] == ',' || i == strlen(id)-1)
+		{
+			if (i == strlen(id)-1)
+				i++;
+			MacroArguments* node  = (MacroArguments*) malloc(sizeof(MacroArguments));
+			node->arg = (char*)malloc(sizeof(char)*N);
+			strncpy(node->arg,id+prevIndex,i-prevIndex);
+			node->nextArg = NULL;
+			prevIndex = i+1;
+			if (first)
+			{
+				argTop = node;
+				head = node;
+				first = false;
+			}
+			else
+			{
+				argTop = (MacroArguments*)malloc(sizeof(MacroArguments));
+				argTop->nextArg = node;
+			}
+		}
+	}
+	return head;
+}
+
+char* parseValue(MacroArguments* arguments, MacroArguments* values,char* expression)
+{
+	int i = 0;
+	char* changedExpression = (char*)malloc(sizeof(char)*N);
+	strcpy(changedExpression,"");
+	int prevIndex = 0;
+	int lastChar = 0;
+	while (i < strlen(expression))
+	{
+		if (expression[i] == '?')
+		{
+			int j = i+1;
+			strncat(changedExpression,expression+prevIndex,i-prevIndex);
+			prevIndex = i+1;
+			while(expression[j] != '?')
+				j++;
+			char* checkValueExpr = (char*)malloc(sizeof(char)*N);
+			strncpy(checkValueExpr,expression+prevIndex,j-prevIndex);
+			strcat(changedExpression,substituteValue(arguments,values,checkValueExpr));
+			i = j+1;
+			lastChar = i;
+		}
+		else
+			i++;
+	}
+	if (lastChar != i)
+		strncat(changedExpression,expression+lastChar,i-lastChar);
+
+	return changedExpression;
+}
+
+char* macroEvaluation(char* identifier, char* expressionList)
+{
+	Macros* temp = (Macros*)malloc(sizeof(Macros));
+	temp = MacroHead;
+	while (temp!=NULL)
+	{
+		if (strcmp(temp->MacroIdentifier,identifier)==0)
+		{
+			MacroArguments* valuesList = (MacroArguments*) malloc(sizeof(MacroArguments));
+			valuesList = createArgumentNodes(expressionList);
+			return parseValue(temp->argumentList,valuesList,temp->MacroValue);
+		}
+		temp = temp->nextMacro;
+	}
+	return expressionList;
+}
+
+char* substituteValue(MacroArguments* arguments,MacroArguments* values,char* expression)
+{
+	MacroArguments* tempArg = (MacroArguments*)malloc(sizeof(MacroArguments));
+	MacroArguments* tempVal = (MacroArguments*)malloc(sizeof(MacroArguments));
+	tempArg = arguments;
+	tempVal = values;
+	int count = 0;
+	while(tempArg!=NULL && tempVal!=NULL)
+	{
+		count++;
+		char* temp = (char*)malloc(sizeof(char)*N);
+		strncpy(temp,tempArg->arg+1,strlen(tempArg->arg)-2);
+
+		if (strcmp(temp,expression) == 0)
+			return tempVal->arg;
+
+		tempArg = tempArg->nextArg;
+		tempVal = tempVal->nextArg;
+	}
 }
