@@ -1,4 +1,4 @@
-/* BISON FILE adder.y */
+/* BISON FILE P1.y */
 
 %{
 #include <stdio.h>
@@ -7,7 +7,6 @@
 #include <stdbool.h>
 extern int yylex();
 extern void yyerror(char *);
-void print(int);
 void stringConcat(char*, char*);
 typedef struct MacroArguments
 {
@@ -27,6 +26,7 @@ MacroArguments* createArgumentNodes(char*);
 char* parseValue(MacroArguments*, MacroArguments*,char*);
 char* macroEvaluation(char*, char*);
 char* substituteValue(MacroArguments* ,MacroArguments* ,char* );
+void checkValidityOfExpr(MacroArguments*,MacroArguments*);
 Macros* MacroHead = NULL;
 Macros* MacroTop = NULL;
 int numberOfMacros = 0;
@@ -168,10 +168,10 @@ MethodDeclaration : PUBLIC Type Identifier LPAR Arguments RPAR LCURL TypeIdStar 
 	stringConcat($$,$5);
 	stringConcat($$,") {\n");
 	stringConcat($$,$8);
-	if (strcmp($8,"") == 0)
+	if (strcmp($8," ") == 0)
 		stringConcat($$,"\n");
 	stringConcat($$,$9);
-	if (strcmp($9,"") == 0)
+	if (strcmp($9," ") == 0)
 		stringConcat($$,"\n");
 	stringConcat($$,"return ");
 	stringConcat($$,$11);
@@ -196,6 +196,7 @@ additionalArguments : additionalArguments COMMA Type Identifier
 						stringConcat($$,$1);
 						stringConcat($$,", ");
 						stringConcat($$,$3);
+						stringConcat($$," ");
 						stringConcat($$,$4);
 					}
 					|   { $$ = "";}
@@ -203,7 +204,7 @@ additionalArguments : additionalArguments COMMA Type Identifier
 Type : INT LBRAC RBRAC 
 	  { 
 	 	$$ = malloc(sizeof(char)*N);
-	  	strcpy($$,"int []");
+	  	strcpy($$,"int[]");
 	  }
 	 | BOOLEAN 
 	 { 
@@ -268,7 +269,15 @@ Statement : LCURL StatementStar RCURL
 		  {
 			   	$$ = (char*)malloc(sizeof(char)*N);
 			  	strcpy($$,"");
-			  	stringConcat($$,macroEvaluation($1,$3));
+			  	if (macroEvaluation($1,$3) == NULL)
+			  	{
+			  		stringConcat($$,$1);
+			  		stringConcat($$,"(");
+			  		stringConcat($$,$3);
+			  		stringConcat($$,");\n");
+			  	}
+			  	else
+			  		stringConcat($$,macroEvaluation($1,$3));
 		  }
 		  | Identifier EQUAL Expression SEMICOLON
 			{
@@ -299,7 +308,7 @@ elseStatement : ELSE Statement
 		  			stringConcat($$,"else ");
 		  			stringConcat($$,$2);
 				}
-			  |  {$$ = "";}
+			  |   {$$ = "";}
 
 ExpressionList : Expression additionalExpressions
 				{
@@ -419,8 +428,16 @@ Expression : PrimaryExpression AND PrimaryExpression
 		   | Identifier LPAR ExpressionList RPAR
 		   {
 		   		$$ = (char*)malloc(sizeof(char)*N);
-		   		// printf("%s\n",macroEvaluation($1,$3) );
-		   		strcpy($$,macroEvaluation($1,$3));
+		   		strcpy($$,"");
+		   		if (macroEvaluation($1,$3) == NULL)
+			  	{
+			  		stringConcat($$,$1);
+			  		stringConcat($$,"(");
+			  		stringConcat($$,$3);
+			  		stringConcat($$,")");
+			  	}
+			  	else
+			  		stringConcat($$,macroEvaluation($1,$3));
 		   }
 
 PrimaryExpression : Integer 
@@ -431,12 +448,12 @@ PrimaryExpression : Integer
 				  | TRUE 
 				  { 
 					$$ = (char*)malloc(sizeof(char)*N);
-				  	strcpy($$,"true ");
+				  	strcpy($$,"true");
 				  }
 				  | FALSE 
 				  { 
 					$$ = (char*)malloc(sizeof(char)*N);
-				  	strcpy($$,"false ");
+				  	strcpy($$,"false");
 				  }
 				  | Identifier 
 				  { 
@@ -559,11 +576,6 @@ Integer : INTEGER
 
 %%
 
-void print(int sum) 
-{
-	printf("%d\n",sum);
-}
-
 void stringConcat(char* a, char* b)
 {
 	char* temp = (char*) malloc(sizeof(char)*N);
@@ -605,6 +617,9 @@ MacroArguments* createArgumentNodes(char* id)
 			}
 		}
 	}
+	if (first)
+		head = NULL;
+
 	return head;
 }
 
@@ -650,11 +665,31 @@ char* macroEvaluation(char* identifier, char* expressionList)
 		{
 			MacroArguments* valuesList = (MacroArguments*) malloc(sizeof(MacroArguments));
 			valuesList = createArgumentNodes(expressionList);
+			checkValidityOfExpr(temp->argumentList,valuesList);
 			return parseValue(temp->argumentList,valuesList,temp->MacroValue);
 		}
 		temp = temp->nextMacro;
 	}
-	return expressionList;
+	return NULL;
+}
+
+void checkValidityOfExpr(MacroArguments* arguments,MacroArguments* values)
+{
+	MacroArguments* tempArg = (MacroArguments*)malloc(sizeof(MacroArguments));
+	MacroArguments* tempVal = (MacroArguments*)malloc(sizeof(MacroArguments));
+	tempArg = arguments;
+	tempVal = values;
+
+	while(tempArg!=NULL && tempVal!=NULL)
+	{
+		tempArg = tempArg->nextArg;
+		tempVal = tempVal->nextArg;
+	}
+	if (tempArg != NULL || tempVal != NULL)
+	{
+		yyparse();
+		exit(0);
+	}
 }
 
 char* substituteValue(MacroArguments* arguments,MacroArguments* values,char* expression)
