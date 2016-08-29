@@ -594,13 +594,14 @@ MacroArguments* createArgumentNodes(char* id)
 			if (first)
 			{
 				argTop = node;
-				head = node;
+				head = argTop;
 				first = false;
 			}
 			else
 			{
-				argTop = (MacroArguments*)malloc(sizeof(MacroArguments));
+				argTop->nextArg = (MacroArguments*)malloc(sizeof(MacroArguments));
 				argTop->nextArg = node;
+				argTop = node;
 			}
 		}
 	}
@@ -627,6 +628,7 @@ char* parseValue(MacroArguments* arguments, MacroArguments* values,char* express
 			strncpy(checkValueExpr,expression+prevIndex,j-prevIndex);
 			strcat(changedExpression,substituteValue(arguments,values,checkValueExpr));
 			i = j+1;
+			prevIndex = i;
 			lastChar = i;
 		}
 		else
@@ -674,4 +676,5 @@ char* substituteValue(MacroArguments* arguments,MacroArguments* values,char* exp
 		tempArg = tempArg->nextArg;
 		tempVal = tempVal->nextArg;
 	}
+	return expression;
 }
