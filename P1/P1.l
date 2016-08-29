@@ -11,6 +11,7 @@ int yyparse(void);
 DIGIT [0-9]
 LETTER [a-zA-Z_$]
 ID {LETTER}({LETTER}|{DIGIT})*
+NONASCII [\000-\037]
 %%
 "class"			return CLASS;
 "public"		return PUBLIC;
@@ -63,9 +64,10 @@ ID {LETTER}({LETTER}|{DIGIT})*
 					yylval.token_val = temp;
 					return ID;
 				}
-"//".*			;
-[/][*][^*]*[*]+([^*/][^*]*[*]+)*[/] ;
-[ \t\n]+		;		//do nothing on whitespace
+{NONASCII}+	;
+"//".*			;	// do nothing on single line comments
+[/][*][^*]*[*]+([^*/][^*]*[*]+)*[/] ;	// do nothing on multi-line comments
+[ \t\n]+			;		//do nothing on whitespace
 <<EOF>>			{return 0;}
 .               { printf("// Error while scanning\n"); return 1;}
 
