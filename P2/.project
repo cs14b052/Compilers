@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Lab2</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>visitor/SecondParse.java</name>
+			<type>1</type>
+			<location>/home/smeghanaaparna/Meghana/5th Sem/CS3310/Home_CS14B052/P2/visitor/SecondParse.java</location>
+		</link>
+		<link>
+			<name>visitor/sample.java</name>
+			<type>1</type>
+			<location>/home/smeghanaaparna/Meghana/5th Sem/CS3310/Home_CS14B052/P2/visitor/sample.java</location>
+		</link>
+	</linkedResources>
+</projectDescription>
