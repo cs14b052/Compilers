@@ -5,6 +5,7 @@
 package visitor;
 import syntaxtree.*;
 import visitor.sample.Argument;
+import visitor.sample.MethodArg;
 import visitor.sample.Pair;
 import visitor.sample.TypeIdentifier;
 import java.util.*;
@@ -22,6 +23,10 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	HashMap<sample.Pair, HashSet<TypeIdentifier>> scope = sample.scope;
 	// Derived Class -> Parent Class 
 	HashMap<String, String> par = sample.par;
+	
+	HashMap<String, HashSet<MethodArg>> classToFn = sample.classToFn;
+	
+	List<String> argumentsList = new ArrayList<String>(); 
 
 	//
 	// Auto class visitors--probably don't need to be overridden.
@@ -152,7 +157,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		// Store class Name yn=0(not in function)
 		temp.yn = 0;
 		temp.clsname = n.f1.f0.tokenImage;
-
+		n.f3.accept(this,temp);
 		n.f4.accept(this, temp);
 		return _ret;
 	}
@@ -173,6 +178,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		// Store class Name yn=0(not in function)
 		temp.yn = 0;
 		temp.clsname = n.f1.f0.tokenImage;
+		n.f5.accept(this,temp);
 		n.f6.accept(this,temp);
 		return _ret;
 	}
@@ -184,9 +190,10 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(VarDeclaration n, sample.Argument argu) {
 		string _ret=null;
-		n.f0.accept(this, argu);
-		n.f1.accept(this, argu);
-		n.f2.accept(this, argu);
+//		String type = n.f0.accept(this, argu).toString();
+//		if(type == "int[]" || type == "int" || type == "boolean")
+//			return _ret;
+
 		return _ret;
 	}
 
@@ -212,6 +219,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		temp.yn = 1;
 		temp.clsname = argu.clsname;
 		temp.name = n.f2.f0.tokenImage;
+		n.f7.accept(this, temp);
 		n.f8.accept(this, temp);
 		checkType(n.f1.accept(this,temp).toString(),n.f10.accept(this,temp).toString());
 		return _ret;
@@ -258,7 +266,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(Type n, sample.Argument argu) {
 		string _ret=null;
-		return n.f0.accept(this, argu);
+		return n.f0.accept(this, null);
 	}
 
 	/**
@@ -334,13 +342,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(ArrayAssignmentStatement n, sample.Argument argu) {
 		string _ret=null;
-		n.f0.accept(this, argu);
-		n.f1.accept(this, argu);
-		n.f2.accept(this, argu);
-		n.f3.accept(this, argu);
-		n.f4.accept(this, argu);
-		n.f5.accept(this, argu);
-		n.f6.accept(this, argu);
+		checkType("int[]", n.f0.accept(this,argu).toString());
+		checkType("int", n.f2.accept(this, argu).toString());
+		checkType("int", n.f5.accept(this, argu).toString());
 		return _ret;
 	}
 
@@ -439,7 +443,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(AndExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-		//n.f2.accept(this, argu);
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1,r2);
+		checkType("boolean", r1);
 		return (string) r1;
 	}
 
@@ -451,7 +457,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(OrExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1,r2);
+		checkType("boolean", r1);
 		return (string) r1;
 	}
 
@@ -463,8 +471,10 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(CompareExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
-		return (string) r1;
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1, r2);
+		checkType("int", r1);
+		return (string) "boolean";
 	}
 
 	/**
@@ -475,8 +485,11 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(neqExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
-		return (string) r1;
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1, r2);
+		// TODO: boolean??
+		checkType("int", r1);
+		return (string) "boolean";
 	}
 
 	/**
@@ -487,7 +500,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(PlusExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1,r2);
+		checkType("int",r1);
 		return (string) r1;
 	}
 
@@ -499,7 +514,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(MinusExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1,r2);
+		checkType("int",r1);
 		return (string) r1;
 	}
 
@@ -511,7 +528,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(TimesExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1,r2);
+		checkType("int",r1);
 		return (string) r1;
 	}
 
@@ -523,7 +542,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(DivExpression n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType(r1,r2);
+		checkType("int",r1);
 		return (string) r1;
 	}
 
@@ -536,8 +557,10 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(ArrayLookup n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
-		return (string) r1;
+		String r2 = n.f2.accept(this, argu).toString();
+		checkType("int[]", r1);
+		checkType("int", r2);
+		return (string) "int";
 	}
 
 	/**
@@ -548,8 +571,8 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(ArrayLength n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
-		return (string) r1;
+		checkType("int[]", r1);
+		return (string) "int";
 	}
 
 	/**
@@ -563,8 +586,57 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(MessageSend n, sample.Argument argu) {
 		string _ret=null;
 		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
-		return (string) r1;
+		
+		if (!classToFn.containsKey(r1)) {
+			System.out.println("Type Error");
+			System.exit(0);
+		}
+		String functionName = n.f2.f0.tokenImage;
+		n.f4.accept(this, argu);
+		
+		List<String> Args = new ArrayList<String>();
+		ListIterator<String> li = argumentsList.listIterator(argumentsList.size());
+		// Iterate in reverse.
+		int count = 0;
+		while(li.hasPrevious()) {
+			String s = li.previous();
+			count++;
+		  if (s == ";") {
+//			argumentsList.remove(argumentsList.size()-1);
+			break;
+		  }
+		  Args.add(s);
+//		  argumentsList.remove(s);
+		}
+		for (int i = 0; i < count; i++) {
+			argumentsList.remove(argumentsList.size()-1);
+		}
+		Collections.reverse(Args);
+		HashSet<MethodArg> temp = classToFn.get(r1);
+		
+		String returnType = null;
+		int found = 0;
+		for (Iterator iterator = temp.iterator(); iterator.hasNext();) {
+			MethodArg methodArg = (MethodArg) iterator.next();
+			
+			if (methodArg.functionName == functionName) {
+				if(!listEquals(methodArg.arguments,Args)){
+					System.out.println("Type Error");
+					System.exit(0);
+				}
+				else{
+					returnType = methodArg.type;
+					found = 1;
+				}
+			}
+		}
+		
+		if (found == 0) {
+			System.out.println("Type Error");
+			System.exit(0);
+		}
+		
+		return (string) returnType;
 	}
 
 	/**
@@ -573,9 +645,11 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(ExpressionList n, sample.Argument argu) {
 		string _ret=null;
-		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
-		return (string) r1;
+		argumentsList.add(";");
+		argumentsList.add(n.f0.accept(this, argu).toString());
+		n.f1.accept(this, argu);
+//		System.out.println("hdhsabdh " + argumentsList);
+		return _ret;
 	}
 
 	/**
@@ -584,9 +658,8 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(ExpressionRest n, sample.Argument argu) {
 		string _ret=null;
-		String r1 = n.f0.accept(this, argu).toString();
-//		n.f2.accept(this, argu);
-		return (string) r1;
+		argumentsList.add(n.f1.accept(this, argu).toString());
+		return _ret;
 	}
 
 	/**
@@ -635,7 +708,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(Identifier n, sample.Argument argu) {
 		string _ret=null;
 		if(argu == null)
-			return _ret;
+			return (string)n.f0.tokenImage;
 		return (string)typeIdentifier(argu,n.f0.tokenImage);
 	}
 
@@ -644,7 +717,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(ThisExpression n, sample.Argument argu) {
 		string _ret=null;
-		return (string) "int";
+		return (string) argu.clsname;
 	}
 
 	/**
@@ -668,6 +741,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(AllocationExpression n, sample.Argument argu) {
 		string _ret=null;
+		// TODO: don't know if correct
 		return (string) n.f1.f0.tokenImage;
 	}
 
@@ -697,9 +771,9 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(IdentifierList n, sample.Argument argu) {
 		string _ret=null;
-		String r1 = n.f0.accept(this, argu).toString();
+		n.f0.accept(this, argu);
 		n.f1.accept(this, argu);
-		return (string) r1;
+		return _ret;
 	}
 
 	/**
@@ -708,7 +782,8 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(IdentifierRest n, sample.Argument argu) {
 		string _ret=null;
-		return n.f1.accept(this, argu);
+		n.f1.accept(this, argu);
+		return _ret;
 	}
 
 	private void checkType(String a,String b){
@@ -770,5 +845,31 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 				return s.type;
 		}
 		return null;
+	}
+	
+	private boolean listEquals(List<String> a, List<String> b){
+		
+		if (a.size() != b.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < a.size(); i++) {
+			if (a.get(i) != b.get(i)) {
+				int found =  0;
+				String cur_class= b.get(i);
+				do{
+					if (a.get(i) == cur_class) {
+						found = 1;
+					}
+					cur_class = par.get(cur_class);
+	
+				}while(found==0	&& cur_class!="Object");
+				if (found == 0) {
+					return false; 
+				}
+			}
+		}
+		
+		return true;
 	}
 }

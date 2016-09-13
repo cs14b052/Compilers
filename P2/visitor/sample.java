@@ -4,6 +4,8 @@
 
 package visitor;
 import syntaxtree.*;
+import visitor.sample.MethodArg;
+
 import java.util.*;
 
 
@@ -43,6 +45,33 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 
 
 	}
+	
+	public static class MethodArg {
+		String functionName;
+		List<String> arguments;
+		String type;
+		public MethodArg(String fnName, String Type) {
+			this.functionName = fnName;
+			this.type = Type;
+			arguments = new ArrayList<String>();
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			MethodArg temp = (MethodArg) o;
+			return this.functionName == temp.functionName;
+		}
+
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+				+ ((functionName == null) ? 0 : functionName.hashCode());
+			return result;
+		}
+	}
 
 	// Two strings : Class and function Pair, and if current variable present in Class or function
 	public static class Argument{
@@ -61,7 +90,7 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 		@Override
 		public boolean equals(Object o) {
 			TypeIdentifier temp = (TypeIdentifier) o;
-			return type == temp.type && identifier == temp.identifier;
+			return identifier == temp.identifier;
 		}
 
 
@@ -70,7 +99,7 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 			final int prime = 31;
 			int result = 1;
 			result = prime * result
-				+ ((type == null) ? 0 : type.hashCode());
+				+ ((identifier == null) ? 0 : identifier.hashCode());
 			return result;
 		}
 	}
@@ -84,6 +113,8 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 	public static HashMap<Pair, HashSet<TypeIdentifier>> scope = new HashMap <Pair, HashSet<TypeIdentifier>> ();
 	// Derived Class -> Parent Class 
 	public static HashMap<String, String> par = new HashMap <String, String> ();
+	
+	public static HashMap<String, HashSet<MethodArg>> classToFn = new HashMap <String, HashSet<MethodArg>> ();
 
 
 	// Auto class visitors--probably don't need to be overridden.
@@ -148,7 +179,15 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 		// This scheme works regardless of ordering of the classes in Code
 		trav_num = 1;
 		n.f1.accept(this, argu);
-
+		
+//		HashSet<MethodArg> temp = classToFn.get("Tree");
+//		
+//		for (Iterator iterator = temp.iterator(); iterator.hasNext();) {
+//			MethodArg methodArg = (MethodArg) iterator.next();
+//			if (methodArg.functionName == "GetKey") {
+//				System.out.println(methodArg.arguments);
+//			}
+//		}
 		trav_num = 2;
 		n.f1.accept(this, argu);
 
@@ -227,7 +266,12 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 
 		// Visit all variable declarations, visit all variable declaration in functions
 
-		if(trav_num==1){ 
+		if(trav_num==1){
+			if (ref.containsKey(n.f1.f0.tokenImage)) {
+				System.out.println("Type Error");
+				System.exit(0);
+			}
+			classToFn.put(n.f1.f0.tokenImage, null);
 			par.put(n.f1.f0.tokenImage, "Object");
 			n.f3.accept(this,temp);
 		}
@@ -258,6 +302,11 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 
 		// Visit all variable declarations, visit all variable declaration in functions
 		if(trav_num==1){
+			if (ref.containsKey(n.f1.f0.tokenImage)) {
+				System.out.println("Type Error");
+				System.exit(0);
+			}
+			classToFn.put(n.f1.f0.tokenImage, null);
 		   	n.f5.accept(this,temp);
 			//Assign Par to point to Base class
 			par.put(n.f1.f0.tokenImage, n.f3.f0.tokenImage);
@@ -294,6 +343,10 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 			// If class and method already present, add new variable declaration to Set of other declarations
 			else{
 				set = scope.get(a);
+				if (set.contains(new TypeIdentifier(null, n.f1.f0.tokenImage))) {
+					System.out.println("Type error");
+					System.exit(0);
+				}
 				set.add(new TypeIdentifier((String)n.f0.accept(this,argu),n.f1.f0.tokenImage));
 				scope.put(a, set);
 			}
@@ -310,6 +363,10 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 				ref.put(argu.clsname, set);
 			// If class and method already present, add new variable declaration to Set of other declarations
 			} else {
+				if (set.contains(new TypeIdentifier(null, n.f1.f0.tokenImage))) {
+					System.out.println("Type error");
+					System.exit(0);
+				}
 				set.add(new TypeIdentifier((String)n.f0.accept(this,argu),n.f1.f0.tokenImage));
 			}
 
@@ -336,7 +393,6 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 	public Object visit(MethodDeclaration n, Argument argu) {
 		Object _ret=null;
 		Argument temp = new Argument();
-
 		temp.yn = 1;
 		temp.clsname = argu.clsname;
 		temp.name = n.f2.f0.tokenImage;
@@ -344,6 +400,21 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 		//Collect delcaration of variables in traversal 1;
 		if(trav_num==1)
 		{
+			if (scope.containsKey(new Pair(argu.clsname,n.f2.f0.tokenImage))) {
+				System.out.println("Type error");
+				System.exit(0);
+			}
+			HashSet<MethodArg> set = classToFn.get(argu.clsname);
+			if ( set == null) { 
+				set = new HashSet<MethodArg>();
+				set.add(new MethodArg(n.f2.f0.tokenImage,n.f1.accept(this, argu).toString()));
+				classToFn.put(argu.clsname, set);
+			}
+			else{
+				set = classToFn.get(argu.clsname);
+				set.add(new MethodArg(n.f2.f0.tokenImage,n.f1.accept(this, argu).toString()));
+				classToFn.put(argu.clsname, set);
+			}
 			n.f4.accept(this, temp);
 			n.f7.accept(this, temp);
 		}
@@ -391,6 +462,15 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 				set = scope.get(a);
 				set.add(new TypeIdentifier((String)n.f0.accept(this,argu),n.f1.f0.tokenImage));
 				scope.put(a, set);
+			}
+			
+			HashSet<MethodArg> temp = classToFn.get(argu.clsname);
+			
+			for (Iterator iterator = temp.iterator(); iterator.hasNext();) {
+				MethodArg methodArg = (MethodArg) iterator.next();
+				if (methodArg.functionName == argu.name) {
+					methodArg.arguments.add(n.f0.accept(this,argu).toString());
+				}
 			}
 
 		}
