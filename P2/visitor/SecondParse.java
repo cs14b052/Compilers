@@ -228,13 +228,34 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	public string visit(MethodDeclaration n, sample.Argument argu) {
 		string _ret=null;
 		sample.Argument temp = new sample.Argument();
-
 		temp.yn = 1;
 		temp.clsname = argu.clsname;
 		temp.name = n.f2.f0.tokenImage;
 		n.f7.accept(this, temp);
 		n.f8.accept(this, temp);
-		checkType(n.f1.accept(this,temp).toString(),n.f10.accept(this,temp).toString());
+		String r1 = n.f1.accept(this,temp).toString();
+		String r2 = n.f10.accept(this,temp).toString();
+		if (r1 != r2) {
+			if (!classToFn.containsKey(r1) || !classToFn.containsKey(r2)) {
+				System.out.println("Type error");
+				System.exit(0);
+			}
+			int found = 0;
+			String cur_class = n.f10.accept(this,temp).toString();
+			do{
+				if (cur_class == n.f1.accept(this,temp).toString()) {
+					found = 1;
+				}
+
+				cur_class = par.get(cur_class);
+
+			}while(found==0	&& cur_class!="Object");
+			
+			if (found == 0) {
+				System.out.println("Type error");
+				System.exit(0);
+			}
+		}
 		return _ret;
 	}
 
