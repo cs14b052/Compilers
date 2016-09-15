@@ -176,6 +176,19 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		string _ret=null;
 		sample.Argument temp = new sample.Argument();
 		// Store class Name yn=0(not in function)
+		if (!classToFn.containsKey(n.f1.f0.tokenImage) || !classToFn.containsKey(n.f3.f0.tokenImage) || n.f1.f0.tokenImage == n.f3.f0.tokenImage) {
+			System.out.println("Type error");
+			System.exit(0);
+		}
+		String cur_class= n.f3.f0.tokenImage;
+		do{
+			if (n.f1.f0.tokenImage == cur_class) {
+				System.out.println("Type error");
+				System.exit(0);
+			}
+			cur_class = par.get(cur_class);
+		}while(cur_class!="Object");
+		
 		temp.yn = 0;
 		temp.clsname = n.f1.f0.tokenImage;
 		n.f5.accept(this,temp);
@@ -327,7 +340,31 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(AssignmentStatement n, sample.Argument argu) {
 		string _ret=null;
-		checkType(n.f0.accept(this, argu).toString(),n.f2.accept(this, argu).toString());
+		String r1 = n.f0.accept(this, argu).toString();
+		String r2 = n.f2.accept(this, argu).toString();
+		if(r1 == "int" || r1 == "boolean" || r1 == "int[]"){
+			checkType(r1, r2);
+		}
+		else {
+			int found = 0;
+			String cur_class= r2;
+			do {
+//				System.out.println(cur_class);
+				if (!classToFn.containsKey(cur_class) || !classToFn.containsKey(r1)) {
+					System.out.println("Type error");
+					System.exit(0);
+				}
+				if (cur_class == r1) {
+					found = 1;
+				}
+				cur_class = par.get(cur_class);
+			} while (found == 0 && cur_class != "Object");
+			
+			if (found == 0) {
+				System.out.println("Type error");
+				System.exit(0);
+			}
+		}
 		return _ret;
 	}
 
@@ -412,7 +449,11 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(PrintStatement n, sample.Argument argu) {
 		string _ret=null;
-		n.f2.accept(this, argu);
+		String r1 = n.f2.accept(this, argu).toString();
+		if (r1 != "int") {
+			System.out.println("Type error");
+			System.exit(0);
+		}
 		return _ret;
 	}
 
@@ -590,7 +631,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		String r1 = n.f0.accept(this, argu).toString();
 		
 		if (!classToFn.containsKey(r1)) {
-			System.out.println("Type Error");
+			System.out.println("Type error");
 			System.exit(0);
 		}
 		String functionName = n.f2.f0.tokenImage;
@@ -621,6 +662,10 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		String cur_class= r1;
 		do {
 //			System.out.println(cur_class);
+			if (!classToFn.containsKey(cur_class)) {
+				System.out.println("Type error");
+				System.exit(0);
+			}
 			if (temp != null) {
 				for (Iterator iterator = temp.iterator(); iterator.hasNext();) {
 					MethodArg methodArg = (MethodArg) iterator.next();
@@ -629,7 +674,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 //						System.out.println(methodArg.functionName);
 						if(!listEquals(methodArg.arguments,Args)){
 //							System.out.println(methodArg.functionName);
-							System.out.println("Type Error");
+							System.out.println("Type error");
 							System.exit(0);
 						}
 						else{
@@ -644,7 +689,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		} while (found == 0 && cur_class != "Object");
 		
 		if (found == 0) {
-			System.out.println("Type Error");
+			System.out.println("Type error");
 			System.exit(0);
 		}
 		
@@ -753,7 +798,10 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(AllocationExpression n, sample.Argument argu) {
 		string _ret=null;
-		// TODO: don't know if correct
+		if (!classToFn.containsKey(n.f1.f0.tokenImage.toString())) {
+			System.out.println("Type error");
+			System.exit(0);
+		}
 		return (string) n.f1.f0.tokenImage;
 	}
 
@@ -801,7 +849,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	private void checkType(String a,String b){
 		if(a != b)
 		{
-			System.out.println("Type Error");
+			System.out.println("Type error");
 			System.exit(0);
 		}
 	}
@@ -842,7 +890,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 			}while(found==0	&& cur_class!="Object");
 
 			if(found==0){
-				System.out.println("Type Error");
+				System.out.println("Type error");
 				System.exit(0);
 			}
 
