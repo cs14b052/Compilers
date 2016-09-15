@@ -105,7 +105,7 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 	}
 
 	//Store parse number
-	public int trav_num = 1;
+	// public int trav_num = 1;
 	
 	// Hash map of Class -> Set 
 	public static HashMap<String, HashSet<TypeIdentifier>> ref = new HashMap <String, HashSet<TypeIdentifier>> ();
@@ -177,7 +177,8 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 
 		// Two traversal, one for symbol table, other for printing
 		// This scheme works regardless of ordering of the classes in Code
-		trav_num = 1;
+		// trav_num = 1;
+		n.f0.accept(this,argu);
 		n.f1.accept(this, argu);
 		
 //		HashSet<MethodArg> temp = classToFn.get("Tree");
@@ -188,8 +189,8 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 //				System.out.println(methodArg.arguments);
 //			}
 //		}
-		trav_num = 2;
-		n.f1.accept(this, argu);
+		// trav_num = 2;
+		// n.f1.accept(this, argu);
 
 		n.f2.accept(this, argu);
 		return _ret;
@@ -266,7 +267,7 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 
 		// Visit all variable declarations, visit all variable declaration in functions
 
-		if(trav_num==1){
+		// if(trav_num==1){
 			if (ref.containsKey(n.f1.f0.tokenImage)) {
 				System.out.println("Type Error");
 				System.exit(0);
@@ -274,7 +275,7 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 			classToFn.put(n.f1.f0.tokenImage, null);
 			par.put(n.f1.f0.tokenImage, "Object");
 			n.f3.accept(this,temp);
-		}
+		// }
 		
 		//Assign parent to point to Base class object
 		n.f4.accept(this,temp);
@@ -301,7 +302,7 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 		temp.clsname = n.f1.f0.tokenImage;
 
 		// Visit all variable declarations, visit all variable declaration in functions
-		if(trav_num==1){
+		// if(trav_num==1){
 			if (ref.containsKey(n.f1.f0.tokenImage)) {
 				System.out.println("Type Error");
 				System.exit(0);
@@ -310,7 +311,7 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 		   	n.f5.accept(this,temp);
 			//Assign Par to point to Base class
 			par.put(n.f1.f0.tokenImage, n.f3.f0.tokenImage);
-		}
+		// }
 
 		n.f6.accept(this,temp);
 
@@ -398,8 +399,8 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 		temp.name = n.f2.f0.tokenImage;
 
 		//Collect delcaration of variables in traversal 1;
-		if(trav_num==1)
-		{
+		// if(trav_num==1)
+		// {
 			if (scope.containsKey(new Pair(argu.clsname,n.f2.f0.tokenImage))) {
 				System.out.println("Type error");
 				System.exit(0);
@@ -417,10 +418,10 @@ public class sample extends GJDepthFirst<Object, sample.Argument> {
 			}
 			n.f4.accept(this, temp);
 			n.f7.accept(this, temp);
-		}
-		// print values in traversal two
-		else
-			n.f8.accept(this, temp);
+		// }
+		// // print values in traversal two
+		// else
+		// 	n.f8.accept(this, temp);
 
 
 		return _ret;

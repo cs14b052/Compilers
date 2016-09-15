@@ -86,7 +86,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 	 */
 	public string visit(Goal n, sample.Argument argu) {
 		string _ret=null;
-		//n.f0.accept(this, argu);
+		n.f0.accept(this, argu);
 		n.f1.accept(this, argu);
 		n.f2.accept(this, argu);
 		return _ret;
@@ -487,9 +487,11 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		String r1 = n.f0.accept(this, argu).toString();
 		String r2 = n.f2.accept(this, argu).toString();
 		checkType(r1, r2);
-		// TODO: boolean??
+		if (r1 == "int" || r1 == "boolean") {
+			return (string) "boolean";
+		}
 		checkType("int", r1);
-		return (string) "boolean";
+		return _ret;
 	}
 
 	/**
@@ -593,7 +595,7 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		}
 		String functionName = n.f2.f0.tokenImage;
 		n.f4.accept(this, argu);
-		
+//		System.out.println(functionName);
 		List<String> Args = new ArrayList<String>();
 		ListIterator<String> li = argumentsList.listIterator(argumentsList.size());
 		// Iterate in reverse.
@@ -613,23 +615,33 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		}
 		Collections.reverse(Args);
 		HashSet<MethodArg> temp = classToFn.get(r1);
-		
+//		System.out.println(temp);
 		String returnType = null;
 		int found = 0;
-		for (Iterator iterator = temp.iterator(); iterator.hasNext();) {
-			MethodArg methodArg = (MethodArg) iterator.next();
-			
-			if (methodArg.functionName == functionName) {
-				if(!listEquals(methodArg.arguments,Args)){
-					System.out.println("Type Error");
-					System.exit(0);
-				}
-				else{
-					returnType = methodArg.type;
-					found = 1;
+		String cur_class= r1;
+		do {
+//			System.out.println(cur_class);
+			if (temp != null) {
+				for (Iterator iterator = temp.iterator(); iterator.hasNext();) {
+					MethodArg methodArg = (MethodArg) iterator.next();
+					
+					if (methodArg.functionName == functionName) {
+//						System.out.println(methodArg.functionName);
+						if(!listEquals(methodArg.arguments,Args)){
+//							System.out.println(methodArg.functionName);
+							System.out.println("Type Error");
+							System.exit(0);
+						}
+						else{
+							returnType = methodArg.type;
+							found = 1;
+						}
+					}
 				}
 			}
-		}
+			cur_class = par.get(cur_class);
+			temp = classToFn.get(cur_class);
+		} while (found == 0 && cur_class != "Object");
 		
 		if (found == 0) {
 			System.out.println("Type Error");
@@ -852,7 +864,8 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 		if (a.size() != b.size()) {
 			return false;
 		}
-		
+//		System.out.println(a);
+//		System.out.println(b);
 		for (int i = 0; i < a.size(); i++) {
 			if (a.get(i) != b.get(i)) {
 				int found =  0;
@@ -862,8 +875,8 @@ public class SecondParse<string,Argument> extends GJDepthFirst<string,sample.Arg
 						found = 1;
 					}
 					cur_class = par.get(cur_class);
-	
-				}while(found==0	&& cur_class!="Object");
+//					System.out.println(cur_class);
+				}while(found==0	&& cur_class!="Object" && cur_class!=null);
 				if (found == 0) {
 					return false; 
 				}
